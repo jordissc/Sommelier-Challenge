@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍷 Sommelier Challenge - Lehonor Enoboutique</title>
+    <meta name="description" content="Pon a prueba tus conocimientos sobre cepas de vino argentinas">
+    
+    <!-- React y Babel -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body {
+            font-family: 'Lora', serif;
+        }
+        
+        h1, h2, h3 {
+            font-family: 'Playfair Display', serif;
+        }
+        
+        .wine-stain {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.1;
+        }
+        
+        .wine-stain-1 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, #8b0000, transparent);
+            top: -100px;
+            right: -100px;
+        }
+        
+        .wine-stain-2 {
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, #4b0082, transparent);
+            bottom: -50px;
+            left: -50px;
+        }
+        
+        .grape-pattern {
+            background-image: radial-gradient(circle at 20% 80%, rgba(139, 0, 0, 0.05) 0%, transparent 50%),
+                              radial-gradient(circle at 80% 20%, rgba(75, 0, 130, 0.05) 0%, transparent 50%);
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(139, 0, 0, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(139, 0, 0, 0.6); }
+        }
+        
+        .pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes cork-fall {
+            0% {
+                opacity: 1;
+                transform: translateY(-100px) rotate(0deg) scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: translateY(200px) rotate(180deg) scale(1.2);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(600px) rotate(360deg) scale(0.5);
+            }
+        }
+        
+        .cork-confetti {
+            position: fixed;
+            font-size: 2rem;
+            pointer-events: none;
+            z-index: 1000;
+            animation: cork-fall 3s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        const { Trophy, Clock, Star, Play, RotateCcw } = lucide;
+
+        // Base de datos completa de 200 preguntas sobre cepas argentinas
+        const ALL_QUESTIONS = [
+          // MALBEC (20 preguntas)
+          { q: "¿Cuál es la cepa insignia de Argentina?", opts: ["Cabernet Sauvignon", "Malbec", "Bonarda"], correct: 1, type: "tinta" },
+          { q: "¿Qué aromas son típicos del Malbec argentino?", opts: ["Pomelo y hierbas", "Miel y flores blancas", "Ciruela, violetas, frutos rojos"], correct: 2, type: "tinta" },
+          { q: "¿En qué zona el Malbec es más floral y fresco?", opts: ["Valle de Uco", "Zona Este", "San Rafael"], correct: 0, type: "tinta" },
+          { q: "¿Qué color caracteriza al Malbec?", opts: ["Rojo ladrillo", "Violáceo intenso", "Rubí claro"], correct: 1, type: "tinta" },
+          { q: "¿Qué tipo de taninos tiene el Malbec?", opts: ["Astringentes", "Dulces y redondos", "Muy firmes"], correct: 1, type: "tinta" },
+          { q: "¿En qué zona el Malbec tiende a ser más mermelada?", opts: ["Gualtallary", "Patagonia", "Zonas bajas"], correct: 2, type: "tinta" },
+          { q: "¿Cuál de estas zonas NO es clave para el Malbec?", opts: ["Chapadmalal", "Luján de Cuyo", "Salta"], correct: 0, type: "tinta" },
+          { q: "¿Qué característica climática favorece al Malbec en altura?", opts: ["Humedad alta", "Amplitud térmica", "Lluvias frecuentes"], correct: 1, type: "tinta" },
+          { q: "¿Qué nota NO es típica del Malbec argentino?", opts: ["Ciruela", "Cassis intenso", "Violetas"], correct: 1, type: "tinta" },
+          { q: "¿Cómo son los taninos del Malbec en Valle de Uco?", opts: ["Muy rústicos", "Inexistentes", "Finos y elegantes"], correct: 2, type: "tinta" },
+          { q: "¿Qué frutos rojos se asocian con el Malbec?", opts: ["Cereza, frambuesa", "Solo cítricos", "Frutas tropicales"], correct: 0, type: "tinta" },
+          { q: "¿En qué provincia está Luján de Cuyo?", opts: ["Salta", "Mendoza", "San Juan"], correct: 1, type: "tinta" },
+          { q: "¿Qué elemento destaca en el Malbec de Salta?", opts: ["Cercanía al mar", "Clima húmedo", "Altitud extrema"], correct: 2, type: "tinta" },
+          { q: "¿Qué intensidad de color tiene el Malbec?", opts: ["Muy alta", "Media", "Baja"], correct: 0, type: "tinta" },
+          { q: "El Malbec argentino es reconocido mundialmente desde:", opts: ["Siglo XVIII", "Finales del siglo XX", "2020"], correct: 1, type: "tinta" },
+          { q: "¿Qué tipo de maridaje favorece el Malbec?", opts: ["Pescados blancos", "Ensaladas", "Carnes rojas"], correct: 2, type: "tinta" },
+          { q: "¿Cuál es el perfil aromático del Malbec de altura?", opts: ["Floral y mineral", "Mermelada dulce", "Herbáceo verde"], correct: 0, type: "tinta" },
+          { q: "¿Qué factor climático es clave para el Malbec?", opts: ["Lluvia constante", "Heliofanía", "Viento polar"], correct: 1, type: "tinta" },
+          { q: "En el Malbec, las violetas son:", opts: ["Un defecto", "Inexistentes", "Nota aromática característica"], correct: 2, type: "tinta" },
+          { q: "¿El Malbec argentino se exporta principalmente a?", opts: ["Solo Asia", "Estados Unidos y Europa", "No se exporta"], correct: 1, type: "tinta" },
+
+          // CABERNET FRANC (15 preguntas)
+          { q: "¿Cómo se describe el Cabernet Franc en Argentina?", opts: ["Cepa en declive", "Estrella ascendente", "Cepa experimental"], correct: 1, type: "tinta" },
+          { q: "¿Qué zona es clave para Cabernet Franc de altura?", opts: ["Zona Este", "San Martín", "Gualtallary"], correct: 2, type: "tinta" },
+          { q: "¿Qué aromas caracterizan al Cabernet Franc?", opts: ["Hierbas frescas, frambuesa, grafito", "Solo flores blancas", "Miel y durazno"], correct: 0, type: "tinta" },
+          { q: "¿Qué diferencia tiene el Cab Franc argentino vs francés?", opts: ["Más vegetal", "Menos vegetal, más expresivo", "Sin diferencias"], correct: 1, type: "tinta" },
+          { q: "¿Qué color tiene el Cabernet Franc?", opts: ["Violáceo negro", "Amarillo dorado", "Rojo brillante"], correct: 2, type: "tinta" },
+          { q: "Paraje Altamira es zona clave para:", opts: ["Cabernet Franc", "Solo Chardonnay", "Torrontés"], correct: 0, type: "tinta" },
+          { q: "¿Qué característica define al Cab Franc?", opts: ["Taninos muy duros", "Tensión y elegancia", "Bajo alcohol"], correct: 1, type: "tinta" },
+          { q: "El grafito en el Cab Franc es:", opts: ["Un defecto", "Inexistente", "Nota mineral característica"], correct: 2, type: "tinta" },
+          { q: "¿En qué tipo de suelo destaca el Cab Franc?", opts: ["Calcáreo de altura", "Arcilloso pesado", "Arena pura"], correct: 0, type: "tinta" },
+          { q: "¿Qué fruta roja domina en el Cab Franc?", opts: ["Solo uva", "Frambuesa", "Manzana"], correct: 1, type: "tinta" },
+          { q: "¿El Cab Franc argentino es más expresivo que el francés?", opts: ["No", "Son idénticos", "Sí"], correct: 2, type: "tinta" },
+          { q: "¿Qué estructura tiene el Cabernet Franc?", opts: ["Media con elegancia", "Muy pesada", "Muy ligera"], correct: 0, type: "tinta" },
+          { q: "¿En qué región el Cab Franc es 'estrella'?", opts: ["San Rafael", "Valle de Uco", "La Rioja"], correct: 1, type: "tinta" },
+          { q: "Las hierbas frescas en Cab Franc son:", opts: ["Defecto de cosecha verde", "Inexistentes", "Nota varietal positiva"], correct: 2, type: "tinta" },
+          { q: "¿El Cabernet Franc requiere altitud?", opts: ["Sí, para mantener frescura", "No, prefiere calor", "Es indiferente"], correct: 0, type: "tinta" },
+
+          // BONARDA (12 preguntas)
+          { q: "¿Qué estilo tradicional tiene la Bonarda?", opts: ["Espumante", "Vino de volumen", "Solo alta gama"], correct: 1, type: "tinta" },
+          { q: "¿Qué caracteriza a los taninos de Bonarda?", opts: ["Muy astringentes", "Inexistentes", "Muy suaves"], correct: 2, type: "tinta" },
+          { q: "¿En qué zona abunda la Bonarda?", opts: ["Zona Este de Mendoza", "Valle de Uco", "Patagonia"], correct: 0, type: "tinta" },
+          { q: "¿Qué aromas tiene la Bonarda?", opts: ["Solo cítricos", "Frutos rojos compotados, balsámico", "Mineral puro"], correct: 1, type: "tinta" },
+          { q: "¿Qué se necesita para Bonarda de alta gama?", opts: ["Riego abundante", "Cosecha tardía", "Controlar el rendimiento"], correct: 2, type: "tinta" },
+          { q: "¿Qué color tiene la Bonarda?", opts: ["Rojo rubí oscuro", "Amarillo pálido", "Rosado claro"], correct: 0, type: "tinta" },
+          { q: "La Bonarda históricamente fue:", opts: ["Solo exportación", "Uva de gran volumen", "Cepa experimental"], correct: 1, type: "tinta" },
+          { q: "¿San Rafael es zona de Bonarda?", opts: ["No", "Solo experimental", "Sí"], correct: 2, type: "tinta" },
+          { q: "¿La Bonarda puede dar vinos premium?", opts: ["Sí, con bajo rendimiento", "No, nunca", "Solo rosados"], correct: 0, type: "tinta" },
+          { q: "Las notas balsámicas en Bonarda son:", opts: ["Un defecto", "Características", "Inexistentes"], correct: 1, type: "tinta" },
+          { q: "¿La Bonarda es autóctona argentina?", opts: ["Es francesa", "Sí", "No, es italiana"], correct: 2, type: "tinta" },
+          { q: "¿Qué textura tiene la Bonarda?", opts: ["Suave y accesible", "Muy tánica", "Acuosa"], correct: 0, type: "tinta" },
+
+          // TORRONTÉS (15 preguntas)
+          { q: "¿Cuál es la única cepa 100% nativa de Argentina?", opts: ["Malbec", "Torrontés", "Bonarda"], correct: 1, type: "blanca" },
+          { q: "¿El Torrontés es dulce?", opts: ["Sí, muy dulce", "Semi-dulce", "No, es seco pero aromático"], correct: 2, type: "blanca" },
+          { q: "¿Qué provincia es clave para el Torrontés?", opts: ["Salta", "Buenos Aires", "Chubut"], correct: 0, type: "blanca" },
+          { q: "¿Qué aromas tiene el Torrontés?", opts: ["Cassis y pimienta", "Jazmín, rosa, azahar", "Chocolate y café"], correct: 1, type: "blanca" },
+          { q: "El Torrontés es un cruce de:", opts: ["Malbec x Chardonnay", "Pinot x Syrah", "Criolla x Moscatel"], correct: 2, type: "blanca" },
+          { q: "¿Cafayate es famosa por qué cepa?", opts: ["Torrontés", "Pinot Noir", "Merlot"], correct: 0, type: "blanca" },
+          { q: "¿Qué color tiene el Torrontés?", opts: ["Rojo intenso", "Amarillo pálido", "Dorado oscuro"], correct: 1, type: "blanca" },
+          { q: "¿El aroma intenso del Torrontés indica dulzor?", opts: ["Sí, siempre", "A veces", "No, es un engaño olfativo"], correct: 2, type: "blanca" },
+          { q: "¿La Rioja argentina produce Torrontés?", opts: ["Sí", "No", "Solo experimental"], correct: 0, type: "blanca" },
+          { q: "¿Qué flor se asocia más con Torrontés?", opts: ["Tulipán", "Jazmín", "Girasol"], correct: 1, type: "blanca" },
+          { q: "¿El Torrontés tiene acidez alta?", opts: ["Muy alta", "Inexistente", "Media-baja"], correct: 2, type: "blanca" },
+          { q: "¿El Torrontés es ideal para climas?", opts: ["Cálidos con altura", "Muy fríos", "Húmedos"], correct: 0, type: "blanca" },
+          { q: "¿Qué característica distingue al Torrontés?", opts: ["Taninos firmes", "Perfume intenso", "Color oscuro"], correct: 1, type: "blanca" },
+          { q: "¿El Torrontés envejece bien?", opts: ["Sí, 20 años", "Solo en roble", "No, es para consumo joven"], correct: 2, type: "blanca" },
+          { q: "La uva fresca en el Torrontés se refiere a:", opts: ["Aroma a uva de mesa", "Falta de madurez", "Defecto"], correct: 0, type: "blanca" },
+
+          // CHARDONNAY (12 preguntas)
+          { q: "¿Por qué el Chardonnay es 'camaleón'?", opts: ["Cambia de color", "Cambia según clima y vinificación", "No tiene carácter"], correct: 1, type: "blanca" },
+          { q: "¿Qué zona destaca para Chardonnay en Argentina?", opts: ["Cafayate", "La Rioja", "Gualtallary"], correct: 2, type: "blanca" },
+          { q: "¿Qué aroma da el Chardonnay frío?", opts: ["Manzana verde", "Ananá", "Chocolate"], correct: 0, type: "blanca" },
+          { q: "¿Qué aporta la madera al Chardonnay?", opts: ["Acidez", "Manteca, vainilla", "Color rojo"], correct: 1, type: "blanca" },
+          { q: "¿Los Chardonnay de altura compiten con?", opts: ["Ríojas", "Chablis únicamente", "Borgoñas"], correct: 2, type: "blanca" },
+          { q: "¿Qué color tiene el Chardonnay?", opts: ["Amarillo dorado", "Violeta", "Rosado"], correct: 0, type: "blanca" },
+          { q: "¿El Chardonnay en clima cálido da?", opts: ["Lima ácida", "Ananá, fruta tropical", "Hierbas"], correct: 1, type: "blanca" },
+          { q: "¿San Pablo es zona de Chardonnay?", opts: ["No", "Solo experimental", "Sí, en Valle de Uco"], correct: 2, type: "blanca" },
+          { q: "¿Qué característica tiene el Chardonnay de altura?", opts: ["Mineralidad", "Dulzor extremo", "Taninos altos"], correct: 0, type: "blanca" },
+          { q: "¿El Chardonnay necesita madera?", opts: ["Siempre", "No siempre, depende del estilo", "Nunca"], correct: 1, type: "blanca" },
+          { q: "¿Qué estilo NO es típico de Chardonnay?", opts: ["Mantecoso", "Mineral", "Tinto estructurado"], correct: 2, type: "blanca" },
+          { q: "Valle de Uco produce Chardonnay:", opts: ["De clase mundial", "Solo básico", "No produce"], correct: 0, type: "blanca" },
+
+          // CABERNET SAUVIGNON (12 preguntas)
+          { q: "¿Qué nota puede tener el Cabernet Sauvignon inmaduro?", opts: ["Jazmín", "Pimiento (pirazina)", "Miel"], correct: 1, type: "tinta" },
+          { q: "¿Qué color tiene el Cabernet Sauvignon?", opts: ["Amarillo pálido", "Rosado", "Rojo rubí profundo"], correct: 2, type: "tinta" },
+          { q: "¿Qué zona destaca para Cabernet en Argentina?", opts: ["Agrelo", "La Rioja", "Chapadmalal"], correct: 0, type: "tinta" },
+          { q: "¿Qué aroma es típico del Cabernet maduro?", opts: ["Durazno", "Cassis", "Jazmín"], correct: 1, type: "tinta" },
+          { q: "¿Qué estructura tiene el Cabernet Sauvignon?", opts: ["Ligero", "Sin taninos", "Muy estructurado"], correct: 2, type: "tinta" },
+          { q: "¿Cafayate produce Cabernet Sauvignon?", opts: ["Sí", "No", "Solo rosados"], correct: 0, type: "tinta" },
+          { q: "¿El 'verdor' en Cabernet se debe a?", opts: ["Sobre-maduración", "Madurez incompleta", "Terroir"], correct: 1, type: "tinta" },
+          { q: "¿Qué especias se asocian al Cabernet?", opts: ["Canela dulce", "Vainilla", "Pimienta negra"], correct: 2, type: "tinta" },
+          { q: "¿El Cabernet requiere guarda?", opts: ["Generalmente sí", "No", "Solo 1 mes"], correct: 0, type: "tinta" },
+          { q: "Valle de Uco produce Cabernet:", opts: ["Muy maduro", "Con tensión y frescura", "No produce"], correct: 1, type: "tinta" },
+          { q: "¿Qué pirazina indica en Cabernet?", opts: ["Fruta madura", "Defecto grave", "Nota vegetal"], correct: 2, type: "tinta" },
+          { q: "¿El Cabernet argentino es muy tánico?", opts: ["Sí, estructurado", "No, ligero", "Sin taninos"], correct: 0, type: "tinta" },
+
+          // SYRAH (10 preguntas)
+          { q: "¿Qué provincia es feudo del Syrah?", opts: ["Buenos Aires", "San Juan", "Corrientes"], correct: 1, type: "tinta" },
+          { q: "¿Qué zona de San Juan destaca para Syrah?", opts: ["Cafayate", "Pedernal", "Gualtallary"], correct: 1, type: "tinta" },
+          { q: "¿Qué aromas tiene el Syrah argentino?", opts: ["Jazmín y flores", "Mora, carne curada, especias", "Limón y menta"], correct: 1, type: "tinta" },
+          { q: "¿Qué color tiene el Syrah?", opts: ["Amarillo", "Rojo granate", "Rosado claro"], correct: 1, type: "tinta" },
+          { q: "¿El Syrah de San Juan es?", opts: ["Floral y ligero", "Cárnico y especiado", "Herbáceo"], correct: 1, type: "tinta" },
+          { q: "¿Qué nota cárnica tiene el Syrah?", opts: ["Pescado", "Carne curada", "Pollo"], correct: 1, type: "tinta" },
+          { q: "¿El cuero es nota típica del Syrah?", opts: ["No", "Sí", "Solo en Pinot"], correct: 1, type: "tinta" },
+          { q: "¿Mendoza produce Syrah de calidad?", opts: ["No, solo San Juan", "Sí", "No produce"], correct: 1, type: "tinta" },
+          { q: "¿El Syrah necesita clima?", opts: ["Muy frío", "Cálido", "Húmedo"], correct: 1, type: "tinta" },
+          { q: "¿Qué especias dominan en Syrah?", opts: ["Canela dulce", "Pimienta, especias oscuras", "Menta"], correct: 1, type: "tinta" },
+
+          // PINOT NOIR (10 preguntas)
+          { q: "¿Por qué el Pinot Noir es difícil?", opts: ["Crece en cualquier lado", "Requiere clima muy frío", "No tiene carácter"], correct: 1, type: "tinta" },
+          { q: "¿Qué región argentina es ideal para Pinot?", opts: ["Salta", "Río Negro", "San Juan"], correct: 1, type: "tinta" },
+          { q: "¿Qué color tiene el Pinot Noir?", opts: ["Negro opaco", "Rojo traslúcido", "Amarillo"], correct: 1, type: "tinta" },
+          { q: "¿Qué aromas tiene el Pinot Noir?", opts: ["Coco y piña", "Cereza, tierra húmeda, hongos", "Ajo y cebolla"], correct: 1, type: "tinta" },
+          { q: "¿Qué acidez tiene el Pinot?", opts: ["Baja", "Alta", "Inexistente"], correct: 1, type: "tinta" },
+          { q: "¿El calor destruye el Pinot Noir?", opts: ["No", "Sí", "Lo mejora"], correct: 1, type: "tinta" },
+          { q: "¿Chubut produce Pinot Noir?", opts: ["No", "Sí", "Solo blancas"], correct: 1, type: "tinta" },
+          { q: "¿El Pinot necesita frío extremo?", opts: ["No, calor moderado", "Sí", "Es indiferente"], correct: 1, type: "tinta" },
+          { q: "¿La tierra húmeda en Pinot es?", opts: ["Defecto", "Nota típica", "Inexistente"], correct: 1, type: "tinta" },
+          { q: "Valle de Uco alto produce Pinot:", opts: ["No produce", "En zonas muy frías", "Solo calor"], correct: 1, type: "tinta" },
+
+          // TEMPRANILLO (8 preguntas)
+          { q: "¿El Tempranillo es subestimado en Argentina?", opts: ["No", "Sí, frente al Malbec", "Es muy valorado"], correct: 1, type: "tinta" },
+          { q: "¿Qué zona produce Tempranillo de calidad?", opts: ["Cafayate", "La Consulta", "Mar del Plata"], correct: 1, type: "tinta" },
+          { q: "¿Qué aromas tiene el Tempranillo?", opts: ["Menta y lima", "Frutillas, cuero, higos secos", "Solo madera"], correct: 1, type: "tinta" },
+          { q: "¿Qué color tiene el Tempranillo?", opts: ["Amarillo", "Rojo rubí", "Violeta oscuro"], correct: 1, type: "tinta" },
+          { q: "¿El Tempranillo aguanta guarda?", opts: ["No", "Sí, buen potencial", "Solo 1 año"], correct: 1, type: "tinta" },
+          { q: "¿Los taninos del Tempranillo son?", opts: ["Muy suaves", "Firmes", "Inexistentes"], correct: 1, type: "tinta" },
+          { q: "Zona Este produce Tempranillo:", opts: ["No", "Sí", "Solo experimental"], correct: 1, type: "tinta" },
+          { q: "¿El Tempranillo es de origen?", opts: ["Francés", "Español", "Argentino"], correct: 1, type: "tinta" },
+
+          // TANNAT (8 preguntas)
+          { q: "¿Dónde en Argentina destaca el Tannat?", opts: ["Buenos Aires", "Salta", "Neuquén"], correct: 1, type: "tinta" },
+          { q: "¿Qué color tiene el Tannat?", opts: ["Amarillo", "Púrpura intenso", "Rosado"], correct: 1, type: "tinta" },
+          { q: "¿Qué estructura tiene el Tannat?", opts: ["Ligera", "Astringente y potente", "Sin cuerpo"], correct: 1, type: "tinta" },
+          { q: "¿El Tannat de Salta es más amable que el uruguayo?", opts: ["No", "Sí", "Son idénticos"], correct: 1, type: "tinta" },
+          { q: "¿Qué aromas tiene el Tannat?", opts: ["Flores blancas", "Frutos negros, chocolate amargo", "Cítricos"], correct: 1, type: "tinta" },
+          { q: "¿Cafayate produce Tannat?", opts: ["No", "Sí", "Solo blancas"], correct: 1, type: "tinta" },
+          { q: "¿El Tannat necesita tiempo en botella?", opts: ["No", "Sí, para suavizar", "Es mejor joven"], correct: 1, type: "tinta" },
+          { q: "¿El Tannat es originario de?", opts: ["Argentina", "Uruguay/Francia", "España"], correct: 1, type: "tinta" },
+
+          // PETIT VERDOT (8 preguntas)
+          { q: "¿Cómo era usado tradicionalmente el Petit Verdot?", opts: ["Siempre varietal", "Solo para corte", "Para espumantes"], correct: 1, type: "tinta" },
+          { q: "¿Por qué el Petit Verdot brilla en Argentina?", opts: ["Por el frío", "Por el sol intenso", "Por la humedad"], correct: 1, type: "tinta" },
+          { q: "¿Qué color tiene el Petit Verdot?", opts: ["Amarillo pálido", "Violáceo casi negro", "Rosado"], correct: 1, type: "tinta" },
+          { q: "¿Qué estructura tiene el Petit Verdot?", opts: ["Muy ligera", "Tánica firme", "Sin taninos"], correct: 1, type: "tinta" },
+          { q: "¿Luján de Cuyo produce Petit Verdot?", opts: ["No", "Sí", "Solo Malbec"], correct: 1, type: "tinta" },
+          { q: "¿Qué aromas tiene el Petit Verdot?", opts: ["Flores blancas", "Frutos negros, especias", "Hierba cortada"], correct: 1, type: "tinta" },
+          { q: "¿Valle de Uco es zona de Petit Verdot?", opts: ["No", "Sí", "Solo experimental"], correct: 1, type: "tinta" },
+          { q: "Hoy el Petit Verdot se usa:", opts: ["Solo cortes", "Como varietal y en cortes", "No se usa"], correct: 1, type: "tinta" },
+
+          // MERLOT (8 preguntas)
+          { q: "¿Dónde el Merlot logra máxima elegancia?", opts: ["Patagonia", "Salta caliente", "San Juan"], correct: 0, type: "tinta" },
+          { q: "¿El Merlot sufrió mala fama?", opts: ["No", "Sí, inmerecida", "Siempre fue valorado"], correct: 1, type: "tinta" },
+          { q: "¿Qué aromas tiene el Merlot?", opts: ["Ajo y cebolla", "Arándanos, especias dulces, mentol", "Solo madera"], correct: 1, type: "tinta" },
+          { q: "¿Qué color tiene el Merlot?", opts: ["Amarillo", "Violeta negro", "Rojo rubí"], correct: 2, type: "tinta" },
+          { q: "¿Qué cuerpo tiene el Merlot?", opts: ["Muy pesado", "Medio y sedoso", "Muy ligero"], correct: 1, type: "tinta" },
+          { q: "¿Río Negro es zona de Merlot?", opts: ["No", "Sí", "Solo Torrontés"], correct: 1, type: "tinta" },
+          { q: "¿Tupungato produce Merlot?", opts: ["No", "Solo tintas calientes", "Sí"], correct: 2, type: "tinta" },
+          { q: "¿El frío ayuda al Merlot?", opts: ["No, lo destruye", "Sí, aporta elegancia", "Es indiferente"], correct: 1, type: "tinta" },
+
+          // SAUVIGNON BLANC (8 preguntas)
+          { q: "¿Qué aromas tiene el Sauvignon Blanc?", opts: ["Miel y vainilla", "Ruda, pomelo, pasto cortado", "Cuero y carne"], correct: 1, type: "blanca" },
+          { q: "¿Qué color tiene el Sauvignon Blanc?", opts: ["Rojo intenso", "Verdoso pálido", "Dorado oscuro"], correct: 1, type: "blanca" },
+          { q: "¿Qué acidez tiene el Sauvignon Blanc?", opts: ["Baja", "Filosa y alta", "Media"], correct: 1, type: "blanca" },
+          { q: "¿Qué zona argentina produce buen Sauvignon?", opts: ["Salta caliente", "Valle de Uco", "La Rioja"], correct: 1, type: "blanca" },
+          { q: "¿Chapadmalal es zona de Sauvignon Blanc?", opts: ["No", "Sí", "Solo tintas"], correct: 1, type: "blanca" },
+          { q: "¿El Sauvignon necesita frío?", opts: ["No", "Sí, para mantener acidez", "Clima cálido"], correct: 1, type: "blanca" },
+          { q: "¿El pasto cortado es nota típica de?", opts: ["Malbec", "Sauvignon Blanc", "Tempranillo"], correct: 1, type: "blanca" },
+          { q: "¿El Sauvignon pierde carácter con calor?", opts: ["No", "Sí", "Mejora con calor"], correct: 1, type: "blanca" },
+
+          // SEMILLON (7 preguntas)
+          { q: "¿Cómo envejece el Semillon?", opts: ["Muy mal", "Mejor que el Malbec", "No envejece"], correct: 1, type: "blanca" },
+          { q: "¿Qué aromas tiene el Semillon?", opts: ["Cassis y pimienta", "Miel, cítricos, flores blancas", "Cuero"], correct: 1, type: "blanca" },
+          { q: "¿Qué textura tiene el Semillon con años?", opts: ["Acuosa", "Oleosa", "Tánica"], correct: 1, type: "blanca" },
+          { q: "¿Qué color tiene el Semillon?", opts: ["Rojo", "Dorado", "Rosado"], correct: 1, type: "blanca" },
+          { q: "Valle de Uco produce Semillon:", opts: ["No", "Sí", "Solo Malbec"], correct: 1, type: "blanca" },
+          { q: "¿Río Negro es zona de Semillon?", opts: ["No", "Sí", "Solo tintas"], correct: 1, type: "blanca" },
+          { q: "El Semillon es una joya de:", opts: ["Nuevo mundo", "Viejo mundo", "No tiene valor"], correct: 1, type: "blanca" },
+
+          // PREGUNTAS MEZCLADAS Y COMPARATIVAS (20 preguntas)
+          { q: "¿Qué cepa es 'camaleón' por su versatilidad?", opts: ["Malbec", "Chardonnay", "Tannat"], correct: 1, type: "blanca" },
+          { q: "¿Cuál es la cepa más plantada blanca en Argentina?", opts: ["Torrontés", "Chardonnay", "Pedro Giménez"], correct: 2, type: "blanca" },
+          { q: "¿Qué cepa tiene taninos 'dulces y redondos'?", opts: ["Malbec", "Tannat", "Cabernet Franc"], correct: 0, type: "tinta" },
+          { q: "¿Cuál tiene color 'violáceo casi negro'?", opts: ["Pinot Noir", "Petit Verdot", "Garnacha"], correct: 1, type: "tinta" },
+          { q: "¿Qué cepa es 'la estrella ascendente'?", opts: ["Bonarda", "Cabernet Franc", "Ancellotta"], correct: 1, type: "tinta" },
+          { q: "¿Cuál es la insignia de Argentina?", opts: ["Chardonnay", "Malbec", "Syrah"], correct: 1, type: "tinta" },
+          { q: "¿Qué cepa da rosados más elegantes?", opts: ["Malbec", "Pinot Noir", "Syrah"], correct: 1, type: "tinta" },
+          { q: "¿Cuál tiene 'acidez filosa'?", opts: ["Semillon", "Sauvignon Blanc", "Viognier"], correct: 1, type: "blanca" },
+          { q: "¿Qué cepa requiere frío extremo?", opts: ["Syrah", "Pinot Noir", "Malbec"], correct: 1, type: "tinta" },
+          { q: "¿Cuál es 100% nativa argentina?", opts: ["Malbec", "Torrontés", "Chardonnay"], correct: 1, type: "blanca" },
+          { q: "¿Qué cepa tiene 'textura oleosa'?", opts: ["Sauvignon Blanc", "Semillon", "Torrontés"], correct: 1, type: "blanca" },
+          { q: "¿Cuál es 'feudo de San Juan'?", opts: ["Pinot Noir", "Syrah", "Chardonnay"], correct: 1, type: "tinta" },
+          { q: "¿Qué cepa es 'más amable en Salta que Uruguay'?", opts: ["Merlot", "Tannat", "Cabernet"], correct: 1, type: "tinta" },
+          { q: "¿Cuál tiene aroma a 'jazmín y rosa'?", opts: ["Malbec", "Torrontés", "Syrah"], correct: 1, type: "blanca" },
+          { q: "¿Qué cepa logra 'perfiles cárnicos únicos'?", opts: ["Pinot en Patagonia", "Syrah en San Juan", "Malbec en Salta"], correct: 1, type: "tinta" },
+          { q: "¿Cuál es 'rojo traslúcido'?", opts: ["Malbec", "Pinot Noir", "Petit Verdot"], correct: 1, type: "tinta" },
+          { q: "¿Qué cepa brilla como varietal por el sol mendocino?", opts: ["Pinot Noir", "Petit Verdot", "Garnacha"], correct: 1, type: "tinta" },
+          { q: "¿Cuál es difícil: 'el calor la destruye'?", opts: ["Syrah", "Pinot Noir", "Malbec"], correct: 1, type: "tinta" },
+          { q: "¿Qué cepa tiene 'taninos muy suaves'?", opts: ["Tannat", "Bonarda", "Cabernet"], correct: 1, type: "tinta" },
+          { q: "¿Cuál es 'más expresivo que en Francia'?", opts: ["Malbec", "Cabernet Franc", "Chardonnay"], correct: 1, type: "tinta" },
+
+          // Cepas menos comunes (10 preguntas finales)
+          { q: "¿Qué cepa italiana tiene 'alta acidez natural'?", opts: ["Nebbiolo", "Barbera", "Sangiovese"], correct: 1, type: "tinta" },
+          { q: "¿Cuál es usada principalmente para dar color?", opts: ["Garnacha", "Ancellotta", "Pinot"], correct: 1, type: "tinta" },
+          { q: "¿Qué cepa es rareza italiana con acidez marcada?", opts: ["Malbec", "Teroldego", "Syrah"], correct: 1, type: "tinta" },
+          { q: "¿Cuál aporta 'salvajismo' en cortes Ródano?", opts: ["Chardonnay", "Monastrell", "Torrontés"], correct: 1, type: "tinta" },
+          { q: "¿Qué cepa está renaciendo para vinos ligeros?", opts: ["Tannat", "Garnacha", "Petit Verdot"], correct: 1, type: "tinta" },
+          { q: "¿Cuál es 'casi extinta, pariente del Pinot'?", opts: ["Malbec", "Canari", "Syrah"], correct: 1, type: "tinta" },
+          { q: "¿Qué cepa campana fue rescatada en Salta?", opts: ["Torrontés", "Casavecchia", "Bonarda"], correct: 1, type: "tinta" },
+          { q: "¿Cuál es 'Old Vine' y aporta acidez en cortes?", opts: ["Malbec", "Carignan", "Chardonnay"], correct: 1, type: "tinta" },
+          { q: "¿Qué cepa blanca es 'salina y oceánica'?", opts: ["Torrontés", "Albariño", "Semillon"], correct: 1, type: "blanca" },
+          { q: "¿Cuál es experimental austríaca en Argentina?", opts: ["Riesling", "Gruner Veltliner", "Chardonnay"], correct: 1, type: "blanca" }
+        ];
+
+        // Componente de corcho animado
+        const Cork = ({ x, y, rotation, delay }) => (
+          <div 
+            className="cork-confetti"
+            style={{
+              left: `${x}%`,
+              top: `${y}%`,
+              transform: `rotate(${rotation}deg)`,
+              animationDelay: `${delay}s`
+            }}
+          >
+            🍷
+          </div>
+        );
+
+        // Sistema de almacenamiento simplificado para localStorage
+        const storage = {
+          async get(key) {
+            try {
+              const value = localStorage.getItem(key);
+              return value ? { key, value } : null;
+            } catch (error) {
+              return null;
+            }
+          },
+          async set(key, value) {
+            try {
+              localStorage.setItem(key, value);
+              return { key, value };
+            } catch (error) {
+              return null;
+            }
+          },
+          async list(prefix) {
+            try {
+              const keys = Object.keys(localStorage).filter(k => k.startsWith(prefix));
+              return { keys };
+            } catch (error) {
+              return { keys: [] };
+            }
+          }
+        };
+
+        const WineTrivia = () => {
+          const [gameState, setGameState] = useState('menu');
+          const [currentRound, setCurrentRound] = useState(0);
+          const [score, setScore] = useState(0);
+          const [timeLeft, setTimeLeft] = useState(20);
+          const [answered, setAnswered] = useState(false);
+          const [selectedAnswer, setSelectedAnswer] = useState(null);
+          const [usedQuestions, setUsedQuestions] = useState([]);
+          const [currentQuestion, setCurrentQuestion] = useState(null);
+          const [questionPool, setQuestionPool] = useState([]);
+          const [leaderboard, setLeaderboard] = useState([]);
+          const [playerName, setPlayerName] = useState('');
+          const [showNameInput, setShowNameInput] = useState(false);
+          const [showCorks, setShowCorks] = useState(false);
+          const timerRef = useRef(null);
+
+          useEffect(() => {
+            loadLeaderboard();
+          }, []);
+
+          const loadLeaderboard = async () => {
+            try {
+              const result = await storage.list('score:');
+              if (result && result.keys) {
+                const scores = await Promise.all(
+                  result.keys.map(async (key) => {
+                    const data = await storage.get(key);
+                    return data ? JSON.parse(data.value) : null;
+                  })
+                );
+                const validScores = scores.filter(s => s !== null).sort((a, b) => b.score - a.score);
+                setLeaderboard(validScores.slice(0, 10));
+              }
+            } catch (error) {
+              console.log('No hay ranking previo');
+              setLeaderboard([]);
+            }
+          };
+
+          const saveScore = async (name, finalScore) => {
+            try {
+              const timestamp = Date.now();
+              const scoreData = {
+                name,
+                score: finalScore,
+                date: new Date().toLocaleDateString('es-AR'),
+                timestamp
+              };
+              await storage.set(`score:${timestamp}`, JSON.stringify(scoreData));
+              await loadLeaderboard();
+            } catch (error) {
+              console.error('Error guardando puntaje:', error);
+            }
+          };
+
+          const startGame = () => {
+            const pool = questionPool.length === 0 ? [...ALL_QUESTIONS] : questionPool;
+            const availableQuestions = pool.filter((_, idx) => !usedQuestions.includes(idx));
+            const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+            const question = availableQuestions[randomIndex];
+            const originalIndex = pool.indexOf(question);
+            
+            setCurrentQuestion(question);
+            setUsedQuestions([...usedQuestions, originalIndex]);
+            setQuestionPool(pool.filter((_, idx) => idx !== originalIndex));
+            setGameState('playing');
+            setTimeLeft(20);
+            setAnswered(false);
+            setSelectedAnswer(null);
+            setShowCorks(false);
+            
+            timerRef.current = setInterval(() => {
+              setTimeLeft(prev => {
+                if (prev <= 1) {
+                  clearInterval(timerRef.current);
+                  handleTimeout();
+                  return 0;
+                }
+                return prev - 1;
+              });
+            }, 1000);
+          };
+
+          const handleTimeout = () => {
+            setAnswered(true);
+            setTimeout(() => {
+              nextRound();
+            }, 3000);
+          };
+
+          const handleAnswer = (answerIndex) => {
+            if (answered) return;
+            
+            clearInterval(timerRef.current);
+            setAnswered(true);
+            setSelectedAnswer(answerIndex);
+            
+            if (answerIndex === currentQuestion.correct) {
+              let points = 1;
+              if (timeLeft > 15) points = 3;
+              else if (timeLeft > 10) points = 2;
+              setScore(score + points);
+              
+              setShowCorks(true);
+              setTimeout(() => setShowCorks(false), 3000);
+            }
+            
+            setTimeout(() => {
+              nextRound();
+            }, 3000);
+          };
+
+          const nextRound = () => {
+            if (currentRound >= 2) {
+              endGame();
+            } else {
+              setCurrentRound(currentRound + 1);
+              startGame();
+            }
+          };
+
+          const endGame = () => {
+            clearInterval(timerRef.current);
+            setGameState('results');
+            setShowNameInput(true);
+          };
+
+          const handleSaveScore = () => {
+            if (playerName.trim()) {
+              saveScore(playerName.trim(), score);
+              setShowNameInput(false);
+            }
+          };
+
+          const resetGame = () => {
+            setGameState('menu');
+            setCurrentRound(0);
+            setScore(0);
+            setTimeLeft(20);
+            setAnswered(false);
+            setSelectedAnswer(null);
+            setUsedQuestions([]);
+            setCurrentQuestion(null);
+            setPlayerName('');
+            setShowNameInput(false);
+            setShowCorks(false);
+            clearInterval(timerRef.current);
+          };
+
+          return React.createElement('div', { className: "min-h-screen bg-gradient-to-br from-amber-50 via-red-50 to-purple-50 p-4 font-sans" },
+            showCorks && [...Array(15)].map((_, i) =>
+              React.createElement(Cork, {
+                key: i,
+                x: Math.random() * 100,
+                y: -10,
+                rotation: Math.random() * 360,
+                delay: Math.random() * 0.5
+              })
+            ),
+            React.createElement('div', { className: "max-w-4xl mx-auto relative" },
+              React.createElement('div', { className: "wine-stain wine-stain-1" }),
+              React.createElement('div', { className: "wine-stain wine-stain-2" }),
+
+              gameState === 'menu' && React.createElement('div', { className: "text-center grape-pattern rounded-3xl p-12 shadow-2xl bg-white/80 backdrop-blur relative overflow-hidden" },
+                React.createElement('div', { className: "absolute inset-0 bg-gradient-to-br from-red-900/5 via-purple-900/5 to-amber-900/5" }),
+                React.createElement('div', { className: "relative z-10" },
+                  React.createElement('h1', { className: "text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-900 via-purple-900 to-amber-900 mb-8 drop-shadow-lg leading-tight" },
+                    '🍷 Sommelier Challenge'
+                  ),
+                  React.createElement('p', { className: "text-2xl text-gray-700 mb-8 italic mt-4" },
+                    'Lehonor Enoboutique'
+                  ),
+                  React.createElement('div', { className: "bg-gradient-to-r from-amber-100 to-red-100 rounded-2xl p-8 mb-8 shadow-inner" },
+                    React.createElement('h3', { className: "text-2xl font-bold text-red-900 mb-4" }, '📋 Reglas del Juego'),
+                    React.createElement('ul', { className: "text-left text-lg text-gray-800 space-y-2 max-w-md mx-auto" },
+                      React.createElement('li', null, '✓ 3 preguntas por partida'),
+                      React.createElement('li', null, '✓ 20 segundos por pregunta'),
+                      React.createElement('li', null, '✓ 3 puntos: respuesta en 5 seg'),
+                      React.createElement('li', null, '✓ 2 puntos: respuesta en 6-10 seg'),
+                      React.createElement('li', null, '✓ 1 punto: respuesta en 11-20 seg'),
+                      React.createElement('li', null, '✓ Sin penalización por error')
+                    )
+                  ),
+                  React.createElement('button', {
+                    onClick: startGame,
+                    className: "bg-gradient-to-r from-red-800 to-purple-900 text-white px-12 py-5 rounded-full text-2xl font-bold hover:from-red-900 hover:to-purple-950 transition-all transform hover:scale-105 shadow-2xl pulse-glow flex items-center gap-3 mx-auto"
+                  },
+                    React.createElement(Play, { size: 32 }),
+                    'Comenzar Juego'
+                  ),
+                  leaderboard.length > 0 && React.createElement('div', { className: "mt-12 bg-white/90 rounded-2xl p-8 shadow-xl" },
+                    React.createElement('h3', { className: "text-3xl font-bold text-purple-900 mb-6 flex items-center justify-center gap-3" },
+                      React.createElement(Trophy, { size: 32, className: "text-yellow-500" }),
+                      'Top 10 Récords'
+                    ),
+                    React.createElement('div', { className: "space-y-3" },
+                      leaderboard.map((entry, idx) =>
+                        React.createElement('div', {
+                          key: idx,
+                          className: `flex justify-between items-center p-4 rounded-xl ${
+                            idx === 0 ? 'bg-gradient-to-r from-yellow-200 to-yellow-300 shadow-lg' :
+                            idx === 1 ? 'bg-gradient-to-r from-gray-200 to-gray-300' :
+                            idx === 2 ? 'bg-gradient-to-r from-amber-200 to-amber-300' :
+                            'bg-gray-100'
+                          }`
+                        },
+                          React.createElement('div', { className: "flex items-center gap-4" },
+                            React.createElement('span', { className: "text-2xl font-black text-gray-700 w-8" },
+                              idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`
+                            ),
+                            React.createElement('span', { className: "text-xl font-semibold text-gray-800" }, entry.name)
+                          ),
+                          React.createElement('div', { className: "flex items-center gap-4" },
+                            React.createElement('span', { className: "text-sm text-gray-600" }, entry.date),
+                            React.createElement('span', { className: "text-2xl font-bold text-red-900" }, `${entry.score} pts`)
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              ),
+
+              gameState === 'playing' && currentQuestion && React.createElement('div', { className: "space-y-6" },
+                React.createElement('div', { className: "bg-white/90 backdrop-blur rounded-2xl p-6 shadow-xl flex justify-between items-center" },
+                  React.createElement('div', { className: "flex items-center gap-4" },
+                    React.createElement('div', { className: "bg-gradient-to-r from-red-800 to-purple-900 text-white px-6 py-3 rounded-full font-bold text-xl" },
+                      `Ronda ${currentRound + 1}/3`
+                    ),
+                    React.createElement('div', { className: "bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-6 py-3 rounded-full font-bold text-xl flex items-center gap-2" },
+                      React.createElement(Star, { size: 24 }),
+                      `${score} pts`
+                    )
+                  ),
+                  React.createElement('div', {
+                    className: `text-4xl font-black ${timeLeft <= 5 ? 'text-red-600 animate-pulse' : 'text-purple-900'} flex items-center gap-2`
+                  },
+                    React.createElement(Clock, { size: 32 }),
+                    `${timeLeft}s`
+                  )
+                ),
+                React.createElement('div', { className: "relative", style: { minHeight: '500px' } },
+                  React.createElement('div', { className: "bg-gradient-to-br from-white via-red-50 to-purple-50 rounded-3xl p-10 shadow-2xl h-full flex flex-col justify-between grape-pattern border-4 border-purple-200" },
+                    React.createElement('div', null,
+                      React.createElement('div', { className: "text-sm font-semibold text-purple-700 mb-4 uppercase tracking-wider" },
+                        currentQuestion.type === 'tinta' ? '🍷 Cepa Tinta' : '🥂 Cepa Blanca'
+                      ),
+                      React.createElement('h2', { className: "text-3xl font-bold text-gray-800 mb-8 leading-tight" },
+                        currentQuestion.q
+                      )
+                    ),
+                    React.createElement('div', { className: "space-y-4" },
+                      currentQuestion.opts.map((option, idx) =>
+                        React.createElement('button', {
+                          key: idx,
+                          onClick: () => handleAnswer(idx),
+                          disabled: answered,
+                          className: `w-full p-5 rounded-2xl text-xl font-semibold transition-all transform hover:scale-102 shadow-lg ${
+                            answered ? 'cursor-not-allowed' : 'hover:shadow-2xl'
+                          } ${
+                            answered 
+                              ? idx === currentQuestion.correct
+                                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
+                                : selectedAnswer === idx
+                                ? 'bg-gradient-to-r from-red-500 to-red-600 text-white'
+                                : 'bg-gray-200 text-gray-500'
+                              : 'bg-white hover:bg-gradient-to-r hover:from-purple-100 hover:to-red-100 text-gray-800 border-2 border-purple-200'
+                          }`
+                        },
+                          option
+                        )
+                      )
+                    ),
+                    answered && React.createElement('div', { className: "mt-6 text-center" },
+                      React.createElement('div', {
+                        className: `text-5xl mb-3 ${selectedAnswer === currentQuestion.correct ? 'float-animation' : ''}`
+                      },
+                        selectedAnswer === currentQuestion.correct ? '🎉' : selectedAnswer === null ? '⏰' : '😅'
+                      ),
+                      React.createElement('h3', {
+                        className: `text-3xl font-black ${
+                          selectedAnswer === currentQuestion.correct ? 'text-green-600' : 'text-red-600'
+                        }`
+                      },
+                        selectedAnswer === currentQuestion.correct 
+                          ? '¡CORRECTO!' 
+                          : selectedAnswer === null
+                          ? '¡TIEMPO AGOTADO!'
+                          : '¡INCORRECTO!'
+                      ),
+                      selectedAnswer === currentQuestion.correct && React.createElement('p', { className: "text-2xl font-bold text-purple-900 mt-2" },
+                        `+${timeLeft > 15 ? 3 : timeLeft > 10 ? 2 : 1} puntos`
+                      ),
+                      selectedAnswer !== currentQuestion.correct && React.createElement('div', { className: "mt-4 text-lg text-gray-700" },
+                        React.createElement('p', { className: "font-semibold" }, 'Respuesta correcta:'),
+                        React.createElement('p', { className: "text-2xl font-black text-green-700 mt-1" },
+                          currentQuestion.opts[currentQuestion.correct]
+                        )
+                      )
+                    )
+                  )
+                )
+              ),
+
+              gameState === 'results' && React.createElement('div', { className: "bg-white/90 backdrop-blur rounded-3xl p-12 shadow-2xl text-center grape-pattern" },
+                React.createElement('div', { className: "text-8xl mb-6 float-animation" }, '🏆'),
+                React.createElement('h2', { className: "text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-900 to-purple-900 mb-4" },
+                  '¡Partida Finalizada!'
+                ),
+                React.createElement('div', { className: "bg-gradient-to-r from-yellow-200 to-amber-300 rounded-2xl p-8 mb-8 shadow-inner" },
+                  React.createElement('p', { className: "text-6xl font-black text-gray-800 mb-2" }, score),
+                  React.createElement('p', { className: "text-2xl text-gray-700 font-semibold" }, 'Puntos Totales')
+                ),
+                showNameInput ? React.createElement('div', { className: "mb-8 space-y-4" },
+                  React.createElement('p', { className: "text-xl text-gray-700 mb-4" }, 'Ingresa tu nombre para el ranking:'),
+                  React.createElement('input', {
+                    type: "text",
+                    value: playerName,
+                    onChange: (e) => setPlayerName(e.target.value),
+                    placeholder: "Tu nombre",
+                    className: "px-6 py-4 text-2xl rounded-xl border-2 border-purple-300 focus:border-purple-600 focus:outline-none w-full max-w-md mx-auto block",
+                    onKeyPress: (e) => e.key === 'Enter' && handleSaveScore()
+                  }),
+                  React.createElement('button', {
+                    onClick: handleSaveScore,
+                    disabled: !playerName.trim(),
+                    className: "bg-gradient-to-r from-green-600 to-green-700 text-white px-8 py-4 rounded-full text-xl font-bold hover:from-green-700 hover:to-green-800 transition-all transform hover:scale-105 shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  },
+                    'Guardar Puntaje'
+                  )
+                ) : React.createElement('div', { className: "text-xl text-green-600 font-bold mb-6" },
+                  '✓ ¡Puntaje guardado!'
+                ),
+                React.createElement('button', {
+                  onClick: resetGame,
+                  className: "bg-gradient-to-r from-red-800 to-purple-900 text-white px-10 py-5 rounded-full text-2xl font-bold hover:from-red-900 hover:to-purple-950 transition-all transform hover:scale-105 shadow-2xl flex items-center gap-3 mx-auto"
+                },
+                  React.createElement(RotateCcw, { size: 28 }),
+                  'Volver al Inicio'
+                )
+              )
+            )
+          );
+        };
+
+        // Inicializar Lucide icons
+        lucide.createIcons();
+
+        // Renderizar la app
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(WineTrivia));
+    </script>
+</body>
+</html>
